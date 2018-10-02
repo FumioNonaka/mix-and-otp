@@ -1,5 +1,6 @@
 defmodule KV.Bucket do
-  use Agent
+  # use Agent
+  use Agent, restart: :temporary
   @doc """
   新たな`Bbucket`をつくる。
   """
