@@ -7,7 +7,7 @@ defmodule KV.BucketTest do
   end
 
   test "stores values by key", %{bucket: bucket} do
-    {:ok, bucket} = KV.Bucket.start_link([])
+    # {:ok, bucket} = KV.Bucket.start_link([])
     assert KV.Bucket.get(bucket, "milk") == nil
 
     KV.Bucket.put(bucket, "milk", 3)

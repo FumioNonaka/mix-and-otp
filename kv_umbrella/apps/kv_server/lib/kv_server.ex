@@ -17,26 +17,61 @@ defmodule KVServer do
 
   defp loop_acceptor(socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    # serve(client)
-    {:ok, pid} = Task.Supervisor.start_child(KVServer.TaskSupervisor, fn -> serve(client) end)  # 追加
-    :ok = :gen_tcp.controlling_process(client, pid)  # 追加
+    {:ok, pid} = Task.Supervisor.start_child(KVServer.TaskSupervisor, fn -> serve(client) end)
+    :ok = :gen_tcp.controlling_process(client, pid)
     loop_acceptor(socket)
   end
 
   defp serve(socket) do
-    socket
-    |> read_line()
-    |> write_line(socket)
-
+    msg =
+      # case read_line(socket) do
+      #   {:ok, data} ->
+      #     case KVServer.Command.parse(data) do
+      #       {:ok, command} ->
+      #         KVServer.Command.run(command)
+      #       {:error, _} = err ->
+      #         err
+      #     end
+      #   {:error, _} = err ->
+      #     err
+      # end
+      with {:ok, data} <- read_line(socket),
+        {:ok, command} <- KVServer.Command.parse(data),
+        do: KVServer.Command.run(command)
+  
+    write_line(socket, msg)
     serve(socket)
   end
 
   defp read_line(socket) do
-    {:ok, data} = :gen_tcp.recv(socket, 0)
-    data
+    # {:ok, data} = 
+    :gen_tcp.recv(socket, 0)
+    # data
   end
-
-  defp write_line(line, socket) do
-    :gen_tcp.send(socket, line)
+  
+  # defp write_line(line, socket) do
+  defp write_line(socket, {:ok, text}) do
+    # :gen_tcp.send(socket, line)
+    :gen_tcp.send(socket, text)
   end
+  
+  defp write_line(socket, {:error, :unknown_command}) do
+    # 予め定めたエラーはクライアントに書き込む。
+    :gen_tcp.send(socket, "UNKNOWN COMMAND\r\n")
+  end
+  
+  defp write_line(_socket, {:error, :closed}) do
+    # 接続が閉じたらきちんと終了する。
+    exit(:shutdown)
+  end
+  
+  defp write_line(socket, {:error, :not_found}) do
+    :gen_tcp.send(socket, "NOT FOUND\r\n")
+  end  
+  
+  defp write_line(socket, {:error, error}) do
+    # 不明なエラーはクライアントに書き込んで終了する。
+    :gen_tcp.send(socket, "ERROR\r\n")
+    exit(error)
+  end  
 end
