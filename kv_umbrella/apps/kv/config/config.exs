@@ -28,3 +28,5 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 #     import_config "#{Mix.env()}.exs"
+# computer-nameはローカルマシン名に置き替える
+config :kv, :routing_table, [{?a..?m, :"foo@IT-04357-M"}, {?n..?z, :"bar@IT-04357-M"}]
